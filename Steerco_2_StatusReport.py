@@ -2,6 +2,13 @@ import os
 from pptx import Presentation
 from openpyxl import Workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+
+
+# Hardcoded Excel file path
+excel_file_path = r"C:\Users\A.JanardhananNair\OneDrive - Shell\Ani\Work\Learning\Hackathon\PMO\ProjectList.xlsx"
 
 def extract_table_from_ppt_to_excel(ppt_file_path, excel_file_path):
     # Load the PowerPoint presentation
@@ -46,7 +53,8 @@ def extract_table_from_ppt_to_excel(ppt_file_path, excel_file_path):
 
     # Save the workbook
     wb.save(excel_file_path)
-    print(f"Table data from PowerPoint saved to {excel_file_path}")
+    #print(f"Table data from PowerPoint saved to {excel_file_path}")
+    return True
 
 # File paths
 
@@ -63,9 +71,51 @@ def create_excel_path(text):
     full_path = os.path.join(folder_path, file_name)
     return full_path
 
-# Example usage
-ppt_path = create_ppt_path("PRJ198847")
-excel_path = create_excel_path("PRJ198847")
 
-# Run the function
-extract_table_from_ppt_to_excel(ppt_path, excel_path)
+
+def load_dropdown_values():
+    try:
+        df = pd.read_excel(excel_file_path, engine='openpyxl')
+        column_name = df.columns[0]  # Use the first column
+        values = df[column_name].dropna().unique().tolist()
+        dropdown['values'] = values
+        if values:
+            dropdown.current(0)
+    except Exception as e:
+        print(f"Error loading Excel file: {e}")
+
+def on_submit():
+    selected_value = dropdown.get()
+    #print(f"Selected value: {selected_value}")
+    ppt_path = create_ppt_path(selected_value)
+    excel_path = create_excel_path(selected_value)
+    if extract_table_from_ppt_to_excel(ppt_path, excel_path):
+        status_label.config(text="Status report updated successfully")
+        root.after(3000, lambda: status_label.config(text=""))  # Clear message after 3 seconds
+    else:
+        status_label.config(text="Status report not updated")
+        root.after(3000, lambda: status_label.config(text=""))  # Clear message after 3 seconds
+
+# GUI setup
+root = tk.Tk()
+root.title("Dropdown from Excel Column")
+root.geometry("400x200")  # Set a larger window size
+
+# Add padding and spacing
+frame = tk.Frame(root, padx=20, pady=20)
+frame.pack(expand=True)
+
+dropdown = ttk.Combobox(frame, state="readonly", width=40)
+dropdown.pack(pady=10)
+
+submit_button = tk.Button(frame, text="Submit", command=on_submit)
+submit_button.pack(pady=5)
+
+
+status_label = tk.Label(frame, text="", fg="green")
+status_label.pack(pady=5)
+
+# Load values into dropdown on startup
+load_dropdown_values()
+
+root.mainloop()
